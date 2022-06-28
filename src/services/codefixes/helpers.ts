@@ -80,8 +80,15 @@ namespace ts.codefix {
          */
         const kind = declaration?.kind ?? SyntaxKind.PropertySignature;
         const name = getSynthesizedDeepClone(getNameOfDeclaration(declaration), /*includeTrivia*/ false) as PropertyName;
-        const visibilityModifier = createVisibilityModifier(declaration ? getEffectiveModifierFlags(declaration) : ModifierFlags.None);
-        const modifiers = visibilityModifier ? factory.createNodeArray([visibilityModifier]) : undefined;
+        const effectiveModifierFlags = declaration ? getEffectiveModifierFlags(declaration) : ModifierFlags.None;
+        let modifierFlags =
+            effectiveModifierFlags & ModifierFlags.Public ? ModifierFlags.Public :
+            effectiveModifierFlags & ModifierFlags.Protected ? ModifierFlags.Protected :
+            ModifierFlags.None;
+        if (isAutoAccessorPropertyDeclaration(declaration)) {
+            modifierFlags |= ModifierFlags.Accessor;
+        }
+        const modifiers = modifierFlags ? factory.createNodeArray(factory.createModifiersFromModifierFlags(modifierFlags)) : undefined;
         const type = checker.getWidenedType(checker.getTypeOfSymbolAtLocation(symbol, enclosingDeclaration));
         const optional = !!(symbol.flags & SymbolFlags.Optional);
         const ambient = !!(enclosingDeclaration.flags & NodeFlags.Ambient) || isAmbient;
@@ -626,16 +633,6 @@ namespace ts.codefix {
                     // TODO Handle auto quote preference.
                     [factory.createStringLiteral(text, /*isSingleQuote*/ quotePreference === QuotePreference.Single)]))],
             /*multiline*/ true);
-    }
-
-    function createVisibilityModifier(flags: ModifierFlags): Modifier | undefined {
-        if (flags & ModifierFlags.Public) {
-            return factory.createToken(SyntaxKind.PublicKeyword);
-        }
-        else if (flags & ModifierFlags.Protected) {
-            return factory.createToken(SyntaxKind.ProtectedKeyword);
-        }
-        return undefined;
     }
 
     export function setJsonCompilerOptionValues(
