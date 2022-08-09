@@ -85,7 +85,7 @@ namespace ts.codefix {
             effectiveModifierFlags & ModifierFlags.Public ? ModifierFlags.Public :
             effectiveModifierFlags & ModifierFlags.Protected ? ModifierFlags.Protected :
             ModifierFlags.None;
-        if (isAutoAccessorPropertyDeclaration(declaration)) {
+        if (declaration && isAutoAccessorPropertyDeclaration(declaration)) {
             modifierFlags |= ModifierFlags.Accessor;
         }
         const modifiers = modifierFlags ? factory.createNodeArray(factory.createModifiersFromModifierFlags(modifierFlags)) : undefined;
